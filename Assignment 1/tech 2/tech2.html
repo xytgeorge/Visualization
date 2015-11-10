@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <title>Parallel Coordinates</title>
+    <style type="text/css">
+
+svg {
+  font: 10px sans-serif;
+}
+
+.background path {
+  fill: none;
+  stroke: #ccc;
+  stroke-opacity: .4;
+  shape-rendering: crispEdges;
+}
+
+.foreground path {
+  fill: none;
+  stroke: steelblue;
+  stroke-opacity: .7;
+}
+
+.brush .extent {
+  fill-opacity: .3;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+}
+
+.axis line, .axis path {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  text-shadow: 0 1px 0 #fff;
+}
+
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
+    <script type="text/javascript" src="fisheye.js"></script>
+    <script type="text/javascript">
+
+var m = [30, 10, 10, 10],
+    w = 960 - m[1] - m[3],
+    h = 500 - m[0] - m[2];
+
+var x = d3.scale.ordinal().rangePoints([0, w], 1),
+    y = {};
+	dragging = {};
+
+var line = d3.svg.line(),
+    axis = d3.svg.axis().orient("left"),
+    fisheye = d3.fisheye.scale(d3.scale.identity).domain([0,w]).focus(w/2).distortion(3),
+    background,
+    foreground;
+
+var svg = d3.select("body").append("svg:svg")
+    .attr("width", w + m[1] + m[3])
+    .attr("height", h + m[0] + m[2])
+  .append("svg:g")
+    .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+d3.tsv("cities-data.tsv", function(cities) {
+
+  // Extract the list of dimensions and create a scale for each.
+  x.domain(dimensions = d3.keys(cities[2]).filter(function(d) {
+    return d != "Code" && d != "Naam" && d != "GM_CODE" && d != "GM_NAAM" && d != "WATER" && d != "GM_NAAM" && d != "STED" && d != "P_00_14_JR" && d != "P_15_24_JR" && d != "P_25_44_JR" && d != "P_45_64_JR" && d != "P_65_EO_JR" && d != "AANTAL_HH" && d != "P_EENP_HH" && d != "P_HH_Z_K" && d != "P_HH_M_K" && d != "GEM_HH_GR" && d != "P_WEST_AL" && d != "P_N_W_AL" && d != "P_MAROKKO" && d != "P_ANT_ARU" && d != "P_SURINAM" && d != "P_TURKIJE" && d != "P_OVER_NW" && d != "AUTO_TOT" && d != "AUTO_HH" && d != "AUTO_LAND" && d != "BEDR_AUTO" && d != "MOTOR_2W" && d != "OPP_TOT" && d != "OPP_LAND" && d != "OPP_WATER" && d != "P_00_04_JR" && d != "P_05_09_JR" && d != "P_10_14_JR" && d != "P_15_19_JR" && d != "P_20_24_JR" && d != "P_25_29_JR" && d != "P_30_34_JR" && d != "P_35_39_JR" && d != "P_40_44_JR" && d != "P_45_49_JR" && d != "P_50_54_JR" && d != "P_55_59_JR" && d != "P_60_65_JR" && d != "P_65_69_JR" &&  d != "P_70_74_JR" && d != "P_75_79_JR" && d != "P_80_84_JR" && d != "P_85_89_JR" && d != "P_90_94_JR" && d != "P_95_EO_JR" && (y[d] = d3.scale.linear()
+        .domain(d3.extent(cities, function(p) { return +p[d]; }))
+        .range([h, 0]));
+  }));
+
+  // Add grey background lines for context.
+  background = svg.append("svg:g")
+      .attr("class", "background")
+      .selectAll("path")
+      .data(cities)
+      .enter().append("svg:path")
+      .attr("d", path);
+
+  // Add blue foreground lines for focus.
+  foreground = svg.append("svg:g")
+      .attr("class", "foreground")
+      .selectAll("path")
+      .data(cities)
+      .enter().append("svg:path")
+      .attr("d", path);
+
+  // Add a group element for each dimension.
+  var g = svg.selectAll(".dimension")
+      .data(dimensions)
+      .enter().append("svg:g")
+      .attr("class", "dimension")
+      .attr("transform", function(d) { return "translate(" + fisheye(x(d)) + ")"; });
+
+  // Add an axis and title.
+  g.append("svg:g")
+      .attr("class", "axis")
+      .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+      .append("svg:text")
+      .attr("text-anchor", "middle")
+      .attr("y", -9)
+      .text(String);
+
+  // Add and store a brush for each axis.
+  g.append("svg:g")
+      .attr("class", "brush")
+      .each(function(d) { d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brush", brush)); })
+      .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+  // Update fisheye effect with mouse move.
+  svg.on("mousemove", function() {
+    fisheye.focus(d3.mouse(this)[0]);
+
+    foreground.attr("d", path);
+    background.attr("d", path);
+    g.attr("transform", function(d) { return "translate(" + fisheye(x(d)) + ")"; });
+  });
+});
+
+
+
+function transition(g) {
+  return g.transition().duration(500);
+}
+
+// Returns the path for a given data point.
+function path(d) {
+  return line(dimensions.map(function(p) { return [fisheye(x(p)), y[p](d[p])]; }));
+}
+
+// Handles a brush event, toggling the display of foreground lines.
+function brush() {
+  var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
+      extents = actives.map(function(p) { return y[p].brush.extent(); });
+  foreground.style("display", function(d) {
+    return actives.every(function(p, i) {
+      return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+    }) ? null : "none";
+  });
+}
+
+    </script>
+  </body>
+</html>

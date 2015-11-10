@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<meta charset = "UTF-8">
+<style>
+#countryUsage{
+  font-size: 20px;
+    position: absolute;
+    left: 0px;
+    top:0px;
+}
+
+#countryGrowth{
+  font-size: 20px;
+    position: absolute;
+    left: 0px;
+    top:0px;
+}
+
+#countryName{
+    position: fixed;
+    left: 45%;
+    top: 95%;
+    font-size: 36px;
+    font-family: "Helvetica Neue", Helvetica;
+}
+
+body {
+    position:fixed;
+    top:0%;
+    left:0%;
+  overflow: hidden;
+  margin: 0;
+  font-size: 14px;
+  font-family: "Helvetica Neue", Helvetica;
+}
+
+#map{   
+    position:fixed;
+    top:1%;
+    left:45%;
+    overflow: hidden;
+    margin: 0;
+    font-size: 14px;
+    font-family: "Helvetica Neue", Helvetica;
+}
+
+svg {
+  width: 680px;
+  height: 540px;
+  pointer-events: all;
+}
+
+circle {
+  fill: #dbe4f0;
+}
+
+path {
+  fill: #ffffff;
+  stroke: #555555;
+}
+
+#dataLegend{
+    font-size: 11px;
+    font-weight: 100;
+    text-shadow:
+   -0.5px -0.5px 0 #000,  
+    0.5px -0.5px 0 #000,
+    -0.5px 0.5px 0 #000,
+     0.5px 0.5px 0 #000;
+    position: fixed;
+    top: 0%;
+    left: 0%;
+}
+ #header, #maximum, #maximumG{
+  position: fixed;
+  top: 0;
+}
+
+#header, #maximum, #maximumG, #countryName {
+  z-index: 1;
+  display: block;
+  font-size: 36px;
+  font-weight: 300;
+  text-shadow: 0 1px 0 #fff;
+}
+
+#header.inverted{
+  color: #fff;
+  text-shadow: 0 1px 4px #000;
+}
+
+#header {
+  top: 80px;
+  left: 140px;
+  width: 1000px;
+}
+
+#maximum {
+  top: 55%;
+  left: 0%;
+  text-align: right;
+}
+
+#maximumG {
+  top: 75%;
+  left: 0%;
+  text-align: right;
+}
+
+#buttons {
+  position: fixed;
+  top: 550px;
+  left: 100px;
+  text-align: left;
+  display: inline;
+}
+
+rect {
+  fill: none;
+  pointer-events: all;
+}
+
+pre {
+  font-size: 18px;
+}
+
+line {
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.chart div {
+   font: 10px sans-serif;
+   background-color: red;
+   text-align: right;
+   color: white;
+ }
+
+.chart rect {
+   stroke: white;
+ }
+
+.chart{   
+    position: fixed;
+    top: 50%;
+    left: 48%;
+ }
+
+#map{   
+    position: fixed;
+    top:1%;
+    left: 45%;}
+
+
+.none {fill: #ffffff}
+.color1 {fill: #f7fcf5;}
+.color2 {fill: #e5f5e0;}
+.color3 {fill: #c7e9c0;}
+.color4 {fill: #a1d99b;}
+.color5 {fill: #74c476;}
+.color6 {fill: #41ab5d;}
+.color7 {fill: #238b45;}
+.color8 {fill: #006d2c;}
+.color9 {fill: #00441b;}
+
+#chart1 svg{
+  height: 500px;
+  min-width: 100px;
+  min-height: 100px;
+}
+
+</style>
+
+<html>
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.min.js"></script>
+      
+  </head>
+  <body>
+      
+    <div id="body">
+        <div id="countryName" align="left" style="position:absolute;top:630px;left:100px;width:1000px;height:10px;">Country Name</div>
+
+        <div id="countryUsage" align="left" style="font-size:20px;position:absolute;top:670px;left:100px;width:1000px;height:10px;">Usage: </div>
+
+        <div id="countryGrowth" align="left" style="font-size:20px;position:absolute;top:670px;left:300px;width:1000px;height:10px;">Growth: </div>
+        
+        <div id="footer">
+
+        <div id="thisYear" align="left" style="font-size:20px;position:absolute;top:690px;left:100px;width:200px;height:10px;">Year</div>
+
+        <div id="autoRotate" align="left" style="font-size:20px;position:absolute;top:690px;left:300px;width:200px;height:10px;">Auto Rotation</div>
+
+        <div ><select id="yearSelector" style="position:absolute;top:695px;left:150px;width:100px;height:20px;" onchange="yearSelection(this.value)">
+          <option value="1990">1990</option>
+          <option value="1991">1991</option>
+          <option value="1992">1992</option>
+          <option value="1993">1993</option>
+          <option value="1994">1994</option>
+          <option value="1995">1995</option>
+          <option value="1996">1996</option>
+          <option value="1997">1997</option>
+          <option value="1998">1998</option>
+          <option value="1999">1999</option>
+          <option value="2000">2000</option>
+          <option value="2001">2001</option>
+          <option value="2002">2002</option>
+          <option value="2003">2003</option>
+          <option value="2004">2004</option>
+          <option value="2005">2005</option>
+          <option value="2006">2006</option>
+          <option value="2007">2007</option>
+          <option value="2008">2008</option>
+          <option value="2009">2009</option>
+          <option value="2010">2010</option>
+          <option value="2011" selected>2011</option>
+        </select>
+        <select id="rotateSelector" style="position:absolute;top:695px;left:440px;width:100px;height:20px;">
+              <option value="ON">ON</option>
+              <option value="OFF" selected>OFF</option>
+          </select></div>
+        </div>
+        
+                    
+    </div>
+    <div id="map">
+        </div>
+
+      <div id="chart"></div>
+
+      <div id="buttons">
+          
+          <button style="width:120px;height:40px;background-color:#f6f600" onclick="setMap('northAmerica')">North America</button>
+          <button style="width:120px;height:40px;background-color:#00f6f6" onclick="setMap('southAmerica')">South America</button>
+          <button style="width:120px;height:40px;background-color:#000ddf" onclick="setMap('middleEast')">Middle East</button>
+          <button style="width:120px;height:40px;background-color:#f33000" onclick="setMap('europe')">Europe</button></br>
+          <button style="width:120px;height:40px;background-color:#222222" onclick="setMap('africa')"><div style="color:#ffffff">Africa</div></button>
+          <button style="width:120px;height:40px;background-color:#cf00cf" onclick="setMap('asia')">Asia</button>
+          <button style="width:120px;height:40px;background-color:#03f300" onclick="setMap('australia')">Austrlia</button>
+          <button style="width:120px;height:40px;background-color:#ffffff" onclick="setMap('reset')">World</button></br></div>
+
+</div>
+    <canvas id="myCanvas" style="position:absolute;top:550px;left:600px" width="680" height="150"></canvas>
+    <canvas id="blankCanvas" style="position:absolute;top:0px;left:0px" width="680" height="110"></canvas>
+
+    <div id="LegendName" align="left" style="position:absolute;top:530px;left:580px;width:100px;height:20px;font-size:15px;">Legend</div>
+    <div id="Legend1" align="left" style="position:absolute;top:550px;left:630px;width:100px;height:20px;font-size:12px;">Usage:100%</div>
+    <div id="Legend2" align="left" style="position:absolute;top:615px;left:630px;width:100px;height:20px;font-size:12px;">Usage:0%</div>
+    <div id="Legend3" align="left" style="position:absolute;top:625px;left:630px;width:100px;height:20px;font-size:12px;">No Data</div>
+
+    <div id="CourseName" align="left" style="position:absolute;top:10px;left:100px;width:500px;height:50px;font-size:22px;font-family:Courier New"><b>2IV35 Visualization</b></div>
+    <div id="AssignmentName" align="left" style="position:absolute;top:10px;left:380px;width:500px;height:50px;font-size:22px;font-family:Courier New"><b>Assignment 3</b></div>
+    <div id="Name" align="left" style="position:absolute;top:32px;left:100px;width:500px;height:50px;font-size:28px;font-family:times"><b>Global Internet Usage (1990~2011)</b></div>
+    <div id="Author1" align="left" style="position:absolute;top:60px;left:100px;width:400px;height:50px;font-size:20px;">Yiting Xu</div>
+    <div id="Author1" align="left" style="position:absolute;top:60px;left:217px;width:400px;height:50px;font-size:20px;">(0925537)</div>
+    <div id="Author2" align="left" style="position:absolute;top:80px;left:100px;width:400px;height:50px;font-size:20px;">Shah Nawaz (0927948)</div>
+    <div id="email1" align="left" style="position:absolute;top:60px;left:330px;width:400px;height:50px;font-size:20px;"><a href="mailto:y.xu@student.tue.nl">y.xu@student.tue.nl</a></div>
+    <div id="email2" align="left" style="position:absolute;top:80px;left:330px;width:400px;height:50px;font-size:20px;"><a href="mailto:s.nawaz.1@student.tue.nl">s.nawaz.1@student.tue.nl</a></div>
+
+    <script type="text/javascript">
+
+var c1=document.getElementById("blankCanvas");
+var cxt1=c1.getContext("2d");
+cxt1.fillStyle="#ffffff";
+cxt1.fillRect(0,0,680,110);
+
+var c2=document.getElementById("myCanvas");
+var cxt2=c2.getContext("2d");
+var grd=cxt2.createLinearGradient(0,0,30,80);
+grd.addColorStop(0,"#00441b");
+grd.addColorStop(1,"#ffffff");
+cxt2.fillStyle=grd;
+cxt2.fillRect(0,0,30,80);
+
+var feature;
+var feature1;
+
+var g;
+
+var continentName = "reset";
+
+var currentScale = 200;
+
+var width = 960;
+var height = 430;
+
+var europe = [300,1015];
+var europeScale = 900;
+var europeRotate = [0,0];
+        
+var northAmerica = [300,315];       
+var northAmericaScale = 350;
+var northAmericaRotate = [100,-45];
+
+var southAmerica = [300,315];        
+var southAmericaScale = 300;
+var southAmericaRotate = [80,20];
+
+var middleEast = [300,315];        
+var middleEastScale = 700;
+var middleEastRotate = [-40,-30];
+        
+var africa = [300,340];
+var africaScale = 350;
+var africaRotate = [0,0];
+
+var asia = [300,325];
+var asiaScale = 400;
+var asiaRotate = [-100,-25];
+
+var australia = [300,315];
+var australiaScale = 400;
+var australiaRotate = [-140,25];
+
+var reset = [300,315];
+var resetScale = 200;
+var resetRotate = [0,0];
+
+var m0;
+var o0;
+
+var scale = 1;
+
+var dataUse = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
+       
+var color = "#000000";
+
+var projection = d3.geo.orthographic()
+    .clipAngle(100)
+    .scale(200)
+    .translate([300, 315])
+    .precision(.1);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+var svg = d3.select("#body").append("svg:svg")
+    .attr("width", width)
+    .attr("height", height)
+    .on("mousedown", mousedown)
+    .on("mousemove", mousemove)
+    .on("mouseup", mouseup);
+
+var zoom = d3.behavior.zoom()
+    .scale(960)
+    .scaleExtent([height, 8 * height])
+    .on("zoom", zoomed);
+
+feature = d3.json("Internet.json", function(collection) {
+   feature = svg.selectAll("path")
+    .data(collection.features)
+    .enter().append("svg:path")
+    .attr("class", function(d) {return currentYear(d) })
+    .attr("d", path)
+    .on("mouseover", mouseover)
+    .call(zoom);
+    svg.append("path");
+});
+
+var svgScatter = d3.select("#body").append("svg:svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g"); 
+
+var x1 = d3.scale.linear()
+    .domain([0, 100])
+    .range([0, 600]);
+
+var xAxis = d3.svg.axis()
+    .scale(x1)
+    .orient("bottom");
+
+var y1 = d3.scale.linear()
+    .domain([50, 0])
+    .range([0, 300]);
+
+var yAxis = d3.svg.axis()
+    .scale(y1)
+    .orient("left");    
+
+  svgScatter.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(50, 320)")
+      .call(xAxis)
+      .append("text")
+      .attr("x", 350)
+      .attr("y", 40)
+      .style("text-anchor", "end")
+      .text("Usage");
+
+  svgScatter.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(50, 20)")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -40)
+      .attr("x", -125)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Growth");
+
+  feature1 = d3.json("Internet.json", function(collection) {
+      svgScatter.selectAll(".dot")
+      .data(collection.features)
+      .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 5)
+      .attr("cx", function(d){ return 6*Math.round(currentYearValue(d)*100)/100 + 50;})
+      .attr("cy", function(d){ return -6*Math.round(growthAtYear(d)*100)/100 + 320;})
+      .style("fill", function(d){return continent(d);})
+      .on("mouseover", mouseScatterOn)
+      .on("mouseout", mouseScatterOff)
+      .append("title")
+      .text(function(d) { return d.properties.name + ", In Year " + getChosenYear() + ", Usage: " + Math.round(currentYearValue(d)*100)/100 + "%" + ", Growth: " + Math.round(growthAtYear(d)*100)/100 + "%"; });
+  }); 
+
+var xInd = d3.scale.linear()
+     .domain([0, 100])
+     .range([0, 275]);
+        
+var yInd = d3.scale.linear()
+    .domain(dataUse)
+    .range([0, 200]);
+
+var chart = d3.select("#chart").append("svg")
+    .attr("class", "chart")
+    .attr("width", 2000)
+    .attr("height", 800);
+
+chart.selectAll("rect")
+    .data(dataUse)
+    .enter().append("rect")
+    .attr("y", yInd)
+    .transition()
+    .duration(400)
+    .attr("width", xInd)
+    .attr("height", yInd)
+    .attr("transform",function(d) { return "rotate(-90),translate(-300,3000)"; });
+    
+ chart.selectAll(".dot")
+    .data(dataUse)
+    .enter().append("text")
+    .attr("y", function(d,i) { return i * 650/dataUse.length;})
+    .attr("dy", ".35em")
+    .style("fill", "#000000")
+    .attr("transform", function(d) { return "rotate(-90), translate(-330, 20)"; })
+    .text(function(d, i) { return i + 1990 + " " + Math.round(dataUse[i]) + " %"; });      
+
+ var mouseover = function(d,i){
+    var thisVal = 0;
+    var thisVal1 = 0;
+    var name = d.properties.name;
+    var data = d;
+
+    if (currentYearValue(d)){ thisVal = Math.floor(currentYearValue(d));} else {thisVal = "NaN";}
+    if (growthAtYear(d)){ thisVal1 = Math.floor(growthAtYear(d));} else {thisVal1 = "NaN";}
+    
+    document.getElementById("countryName").innerHTML = name;
+    document.getElementById("countryUsage").innerHTML = "  Usage: " + thisVal + " %";
+    document.getElementById("countryGrowth").innerHTML = "  Growth: " + thisVal1 + " %";
+
+    for(var i = 1990; i <= 2011; i++) {
+      if(specificYearValue(d, i)) 
+        dataUse[i-1990] = parseFloat(specificYearValue(d,i));
+      else 
+        dataUse[i-1990] = 0;
+      color = continent(d);
+    }
+
+ chart.selectAll("rect")
+    .data(dataUse)
+    .attr("y", function(d,i) { return i * 650 / dataUse.length; })
+    .style("fill", color)
+    .transition()
+    .duration(400)
+    .attr("width", function(d, i) { return dataUse[i] * 3; })
+    .attr("height", 30 )
+    .attr("transform",function(d) { return "rotate(-90), translate(-300, 0)"; });
+
+ chart.selectAll("text").remove();
+ chart.selectAll(".dot")
+    .data(dataUse)
+    .enter().append("text")
+    .attr("y", function(d,i) { return i * 650 / dataUse.length;})
+    .attr("dy", ".35em")
+    .style("fill", function(d, i) {
+        if(data.properties.continent == "africa")
+          return "#888888";
+        else
+          return "#000000";})
+    .attr("transform", function(d) { return "rotate(-90), translate(-330, 20)"; })
+    .text(function(d, i) { return i + 1990 + ": " + Math.round(dataUse[i]) + " %"; });  
+
+  updateScatterPlot(continentName, name);
+}
+
+var currentRotation = 0;
+var rotateInterval = 10;
+var isRotateSwitchOn = false;        
+var rotateCallBack = function() {
+
+    // note that we're returning a new callback function each time
+    return function() {
+        currentRotation+=1;
+        projection.rotate([currentRotation,projection.rotate()[1]])
+        refresh(0);        
+        if(isRotateSwitchOn){
+        d3.timer(rotateCallBack(),rotateInterval);}
+        return true;
+    }
+};      
+        
+d3.select("#rotateSelector").on("change", function() {
+    isRotateSwitchOn = !isRotateSwitchOn;
+    if(isRotateSwitchOn){
+        d3.timer(rotateCallBack(),rotateInterval);
+    }
+});
+
+function yearSelection(val){
+        feature.call(function(d){d.attr("class", function(d) {return currentYear(d); })})
+        updateScatterPlot("reset");
+}
+    
+var updateScatterPlot = function(continentColor, selectedCountry){
+svgScatter.selectAll(".dot").remove();
+feature1 = d3.json("Internet.json", function(collection) {
+  svgScatter.selectAll(".dot")
+      .data(collection.features)
+      .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", function(d){
+          if(selectedCountry == d.properties.name)
+            return 12;
+          else
+            return 5;})
+      .attr("cx", function(d){ return 6*Math.round(currentYearValue(d)*100)/100 + 50;})
+      .attr("cy", function(d){ return -6*Math.round(growthAtYear(d)*100)/100 + 320;})
+      .style("fill", function(d){ 
+          if(continentColor == "reset") 
+            return continent(d);
+          else if(d.properties.continent == continentColor)
+            return continent(d);
+          else if(d.properties.name == selectedCountry)
+            return continent(d); })
+      .on("mouseover", mouseScatterOn)
+      .on("mouseout", mouseScatterOff)
+      .append("title")
+      .text(function(d) { return d.properties.name + ", In Year " + getChosenYear() + ", Usage: " + Math.round(currentYearValue(d)*100)/100 + "%" + ", Growth: " + Math.round(growthAtYear(d)*100)/100 + "%"; });
+  });
+}; 
+
+var cycleColorCallBack = function() {
+    return function() {
+        document.getElementById("thisYear").innerHTML = getChosenYear();
+        feature.call(function(d){d.attr("class", function(d) {return currentYear(d) })})
+        updateTopCountries();
+        return true;
+    }
+};
+
+function mouseScatterOn(d,i){
+  var circle = d3.select(this);
+  var dataNew = d;
+  color = continent(d);
+  var data = d3.json("Internet.json", function(collection) {
+    circle.transition()
+    .duration(400).style("opacity", 1)
+    .attr("r", 10).ease("elastic");
+    });
+    
+    var thisVal = 0;
+    var thisVal1 = 0;
+    if (currentYearValue(d)){ thisVal = Math.floor(currentYearValue(d));} else {thisVal = "NaN";}
+    if (growthAtYear(d)){ thisVal1 = Math.floor(growthAtYear(d));} else {thisVal1 = "NaN";}
+
+    document.getElementById("countryUsage").innerHTML =  "  Usage: " + thisVal + " %";
+    document.getElementById("countryName").innerHTML = d.properties.name;
+    document.getElementById("countryGrowth").innerHTML = "  Growth: " + thisVal1 + " %";
+
+    for(var i = 1990; i <= 2011; i++) {
+      if(specificYearValue(d, i)) 
+        dataUse[i-1990] = parseFloat(specificYearValue(d,i));
+      else 
+        dataUse[i-1990] = 0;
+      color = continent(d);
+    }
+
+ chart.selectAll("rect")
+    .data(dataUse)
+    .attr("y", function(d,i) { return i * 650 / dataUse.length; })
+    .style("fill", color)
+    .transition()
+    .duration(400)
+    .attr("width", function(d, i) { return dataUse[i] * 3; })
+    .attr("height", 30 )
+    .attr("transform",function(d) { return "rotate(-90), translate(-300, 0)"; });
+
+ chart.selectAll("text").remove();
+ chart.selectAll(".dot")
+    .data(dataUse)
+    .enter().append("text")
+    .attr("y", function(d,i) { return i * 650 / dataUse.length;})
+    .attr("dy", ".35em")
+    .style("fill", function(d, i) {
+        if(dataNew.properties.continent == "africa")
+          return "#aaaaaa";
+        else
+          return "#000000";})
+    .attr("transform", function(d) { return "rotate(-90), translate(-330, 20)"; })
+    .text(function(d, i) { return i + 1990 + ": " + Math.round(dataUse[i]) + " %"; });   
+}
+
+function mouseScatterOff(){
+    var circle = d3.select(this);
+    var data = d3.json("Internet.json", function(collection) {
+      circle.transition()
+      .duration(400).style("opacity", 0.5)
+      .attr("r", 5).ease("elastic");
+    d3.selectAll(".guide").transition().duration(400).styleTween("opacity", 
+            function() { return d3.interpolate(.5, 0); })
+            .remove();
+    })
+}
+
+function mousedown() {
+  m0 = [d3.event.pageX, d3.event.pageY];
+  o0 = projection.rotate();
+  d3.event.preventDefault();
+}
+
+
+function mousemove() {
+  if (m0) {
+    var m1 = [d3.event.pageX, d3.event.pageY],
+        o1 = [o0[0] + (m0[0] - m1[0]) / -8, o0[1] + (m1[1] - m0[1]) / -8];
+    projection.rotate(o1);
+    refresh(0);
+  }
+}
+
+function mouseup() {
+  if (m0) {
+    mousemove();
+    m0 = null;
+  }
+}
+
+function zoomed(){
+  scale=d3.event.scale/960;
+  projection.scale(currentScale*scale);
+  refresh(0);
+}
+        
+function refresh(duration) {
+      path = d3.geo.path().projection(projection);
+      feature.attr("d", path);
+}
+
+function clip(d) {
+  return path(projection.clip(d));
+}
+   
+function setMap(loc){
+    continentName = loc;
+    if(loc == "europe"){
+        projection.translate(europe);
+        projection.scale(europeScale);
+        projection.rotate(europeRotate);
+        currentScale=europeScale;
+        updateScatterPlot("europe");
+    }
+    if(loc == "northAmerica"){
+        projection.translate(northAmerica);
+        projection.scale(northAmericaScale);
+        projection.rotate(northAmericaRotate);
+        currentScale=northAmericaScale;
+        updateScatterPlot("northAmerica");
+    } 
+    if(loc == "southAmerica"){
+        projection.translate(southAmerica);
+        projection.scale(southAmericaScale);
+        projection.rotate(southAmericaRotate);
+        currentScale=southAmericaScale;
+        updateScatterPlot("southAmerica");
+    }   
+    if(loc == "africa"){
+        projection.translate(africa);
+        projection.scale(africaScale);
+        projection.rotate(africaRotate);
+        currentScale=africaScale;
+        updateScatterPlot("africa");
+    }
+    if(loc == "middleEast"){
+        projection.translate(middleEast);
+        projection.scale(middleEastScale);
+        projection.rotate(middleEastRotate);
+        currentScale=middleEastScale;
+        updateScatterPlot("middleEast");
+    }
+    if(loc == "reset"){
+        projection.translate(reset);
+        projection.scale(resetScale);
+        projection.rotate(resetRotate);
+        currentScale=resetScale;
+        updateScatterPlot("reset");
+    }
+    if(loc == "australia"){
+        projection.translate(australia);
+        projection.scale(australiaScale);
+        projection.rotate(australiaRotate);
+        currentScale=australiaScale;
+        updateScatterPlot("australia");
+    }
+    if(loc == "asia"){
+        projection.translate(asia);
+        projection.scale(asiaScale);
+        projection.rotate(asiaRotate);
+        currentScale=asiaScale;
+        updateScatterPlot("asia");
+    }
+    refresh(0);
+}
+
+
+function currentYear(d){
+    var year = getChosenYear();
+    var g = d.year1990;
+    if(year == "2011"){
+        g = d.year2011;
+    }
+    else if (year == "2010"){
+        g = d.year2010
+    }
+        else if (year == "2009"){
+        g = d.year2009
+    }
+        else if (year == "2008"){
+        g = d.year2008
+    }
+        else if (year == "2007"){
+        g = d.year2007
+    }
+        else if (year == "2006"){
+        g = d.year2006
+    }
+        else if (year == "2005"){
+        g = d.year2005
+    }
+        else if (year == "2004"){
+        g = d.year2004
+    }
+        else if (year == "2003"){
+        g = d.year2003
+    }
+        else if (year == "2002"){
+        g = d.year2002
+    }
+        else if (year == "2001"){
+        g = d.year2001
+    }
+        else if (year == "2000"){
+        g = d.year2000
+    }
+        else if (year == "1999"){
+        g = d.year1999
+    }
+        else if (year == "1998"){
+        g = d.year1998
+    }
+        else if (year == "1997"){
+        g = d.year1997
+    }
+        else if (year == "1996"){
+        g = d.year1996
+    }
+        else if (year == "1995"){
+        g = d.year1995
+    }
+        else if (year == "1994"){
+        g = d.year1994
+    }
+    else if (year == "1993"){
+        g = d.year1993
+    }
+    else if (year == "1992"){
+        g = d.year1992
+    }
+    else if (year == "1991"){
+        g = d.year1991
+    }
+    else if (year == "1990"){
+        g = d.year1990
+    }
+    return colorChoiceNew(g);
+}
+     
+function growthAtYear(d){
+    var year = getChosenYear();
+    var prevYear = year-1;
+    if (year == 1990){
+        return currentYearValue(d);
+    }
+    return (currentYearValue(d)-specificYearValue(d,prevYear));
+}
+
+function currentYearValue(d){
+    var year = getChosenYear();
+    var g = d.year1990;
+    if(year == "2011"){
+        g = d.year2011;
+    }
+    else if (year == "2010"){
+        g = d.year2010
+    }
+        else if (year == "2009"){
+        g = d.year2009
+    }
+        else if (year == "2008"){
+        g = d.year2008
+    }
+        else if (year == "2007"){
+        g = d.year2007
+    }
+        else if (year == "2006"){
+        g = d.year2006
+    }
+        else if (year == "2005"){
+        g = d.year2005
+    }
+        else if (year == "2004"){
+        g = d.year2004
+    }
+        else if (year == "2003"){
+        g = d.year2003
+    }
+        else if (year == "2002"){
+        g = d.year2002
+    }
+        else if (year == "2001"){
+        g = d.year2001
+    }
+        else if (year == "2000"){
+        g = d.year2000
+    }
+        else if (year == "1999"){
+        g = d.year1999
+    }
+        else if (year == "1998"){
+        g = d.year1998
+    }
+        else if (year == "1997"){
+        g = d.year1997
+    }
+        else if (year == "1996"){
+        g = d.year1996
+    }
+        else if (year == "1995"){
+        g = d.year1995
+    }
+        else if (year == "1994"){
+        g = d.year1994
+    }
+    else if (year == "1993"){
+        g = d.year1993
+    }
+    else if (year == "1992"){
+        g = d.year1992
+    }
+    else if (year == "1991"){
+        g = d.year1991
+    }
+    else if (year == "1990"){
+        g = d.year1990
+    }
+    return g;
+}
+    
+function specificYearValue(d, specYear){
+    var g = d.year1990;
+    if(specYear == "2011"){
+        g = d.year2011;
+    }
+        else if (specYear == "2010"){
+        g = d.year2010
+    }
+        else if (specYear == "2009"){
+        g = d.year2009
+    }
+        else if (specYear == "2008"){
+        g = d.year2008
+    }
+        else if (specYear == "2007"){
+        g = d.year2007
+    }
+        else if (specYear == "2006"){
+        g = d.year2006
+    }
+        else if (specYear == "2005"){
+        g = d.year2005
+    }
+        else if (specYear == "2004"){
+        g = d.year2004
+    }
+        else if (specYear == "2003"){
+        g = d.year2003
+    }
+        else if (specYear == "2002"){
+        g = d.year2002
+    }
+        else if (specYear == "2001"){
+        g = d.year2001
+    }
+        else if (specYear == "2000"){
+        g = d.year2000
+    }
+        else if (specYear == "1999"){
+        g = d.year1999
+    }
+        else if (specYear == "1998"){
+        g = d.year1998
+    }
+        else if (specYear == "1997"){
+        g = d.year1997
+    }
+        else if (specYear == "1996"){
+        g = d.year1996
+    }
+        else if (specYear == "1995"){
+        g = d.year1995
+    }
+        else if (specYear == "1994"){
+        g = d.year1994
+    }
+    else if (specYear == "1993"){
+        g = d.year1993
+    }
+    else if (specYear == "1992"){
+        g = d.year1992
+    }
+    else if (specYear == "1991"){
+        g = d.year1991
+    }
+    else if (specYear == "1990"){
+        g = d.year1990
+    }
+    return g;
+}
+
+function getChosenYear () {
+  var select = document.getElementById("yearSelector");
+  return select.options[select.selectedIndex].value;
+}
+
+function colorChoiceNew(g){
+if(!g){
+    return "none"
+  }
+ else if(g < 11){ 
+ return "color1";
+}
+
+else if(g < 22){ 
+ return "color2";
+}
+
+else if(g < 33){ 
+ return "color3";
+}
+
+else if(g < 44){ 
+ return "color4";
+}
+
+else if(g < 55){ 
+ return "color5";
+}
+
+else if(g < 66){ 
+ return "color6";
+}
+
+else if(g < 77){ 
+ return "color7";
+}
+
+else if(g < 88){ 
+ return "color8";
+}
+
+else { 
+ return "color9";
+}
+
+}
+
+function continent(g){
+  if(g.properties.continent == "europe")
+  {
+    return "#f33000";
+  }
+  else if(g.properties.continent == "asia"){
+    return "#cf00cf";
+  }
+  else if(g.properties.continent == "northAmerica"){
+    return "#f6f600";
+  }
+  else if(g.properties.continent == "southAmerica"){
+    return "#00f6f6";
+  }
+  else if(g.properties.continent == "australia"){
+    return "#03f300";
+  }
+  else if(g.properties.continent == "middleEast"){
+    return "#000ddf";
+  }
+  else if(g.properties.continent == "africa"){
+    return "#222222";
+  }
+  else{
+    return "#aaaaaa";
+  }
+
+}
+
+
+    </script>
+
+  </body>
+</html>

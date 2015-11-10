@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #000;
+}
+
+</style>
+<body>
+<a href="index.html"><font size="4" face="times">BACK</font></a>
+
+<div>Select foreigners from different countries:<br/>
+<select id="item1" name="Item 1">
+  <option value= 0 > Select Y Axis </option>
+  <option value= 1 > P_WEST_AL </option>
+  <option value= 2 > P_N_W_AL </option>
+  <option value= 3 > P_MAROKKO </option>
+  <option value= 4 > P_ANT_ARU </option>
+  <option value= 5 > P_SURINAM </option>
+  <option value= 6 > P_TURKIJE </option>
+  <option value= 7 > P_OVER_NW </option>
+</select>
+</div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scale.pow().exponent(.4)
+    	.range([0, width]);
+
+var y = d3.scale.linear()
+    	.range([height, 0]);
+		
+var xAxis = d3.svg.axis()
+    	.scale(x)
+   		.orient("bottom");
+
+var yAxis = d3.svg.axis()
+		.scale(y)
+    	.orient("left");
+
+var xline = svg.append("g")
+      			.attr("class", "x axis")
+      			.attr("transform", "translate(0," + height + ")");
+				
+var xlabel = svg.append("text")
+      			.attr("class", "label")
+      			.attr("x", width)
+      			.attr("y", 440)
+      			.style("text-anchor", "end");
+
+var yline = svg.append("g")
+      			.attr("class", "y axis");
+				
+var ylabel = svg.append("text")
+      			.attr("class", "label")
+      			.attr("transform", "rotate(-90)")
+      			.attr("y", 6)
+      			.attr("dy", ".71em")
+      			.style("text-anchor", "end");				
+
+var color = d3.scale.category10();
+
+var dataset;
+
+var circle = svg.selectAll(".dot");
+
+var legend = svg.selectAll("rect")
+      .data([3,4,5,1,2])
+      .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", 900)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  legend.append("text")
+      .attr("x", width + 25)
+      .attr("y", 5)
+      .attr("dy", ".40em")
+	  .attr("font-size", 15)
+      .style("text-anchor", "end")
+      .text(function(d, i) { switch(i) 
+	  		{case 0: 
+				return "Moderately Urban";
+				break;
+		     case 1:
+			 	return "Slightly Urban";
+				break;
+			 case 2:
+			 	return "Not Urban";
+				break;
+			 case 3:
+			 	return "Very Strongly Urban";
+				break;
+			 case 4:
+			 	return "Strongly Urban";
+				break;
+			}
+		});
+
+// what to do when we mouse over a bubble
+var mouseOn = function() { 
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+	// transition to increase size/opacity of bubble
+		circle.transition()
+		.duration(800).style("opacity", 1)
+		.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 7; }).ease("elastic");
+
+		// append lines to bubbles that will be used to show the precise data points.
+		// translate their location based on margins
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", circle.attr("cx") - 40)
+			.attr("x2", circle.attr("cx") - 40)
+			.attr("y1", +circle.attr("cy") - 20)
+			.attr("y2", height - margin.bottom / 2)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); })
+
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", +circle.attr("cx") - 40)
+			.attr("x2", -40 )
+			.attr("y1", circle.attr("cy") - 20)
+			.attr("y2", circle.attr("cy") - 20)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); });
+		});
+	// function to move mouseover item to front of SVG stage, in case
+	// another bubble overlaps it
+		d3.selection.prototype.moveToFront = function() { 
+		  return this.each(function() { 
+			this.parentNode.appendChild(this); 
+		  }); 
+		};
+	};
+	
+	// what happens when we leave a bubble?
+var mouseOff = function() {
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+			circle.transition()
+			.duration(800).style("opacity", 0.5)
+			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; }).ease("elastic");
+
+		// fade out guide lines, then remove them
+			d3.selectAll(".guide").transition().duration(100).styleTween("opacity", 
+						function() { return d3.interpolate(.5, 0); })
+						.remove()
+		})
+		// go back to original size and opacity
+};
+
+				// Zoom into data (.dot)
+				function zoom() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_WEST_AL); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function noNeg(val){
+					return val = val>0 ? val : 0;
+		}
+		
+				// Zoom/pan behaviour:
+		function zoom1() {
+			svg.select(".x.axis").call(xAxis);
+			svg.select(".y.axis").call(yAxis);
+				
+			svg.select(".cx").attr("transform", "translate(0,"+y(0)+")");
+			svg.select(".cy").attr("transform", "translate("+x(0)+",0)");
+				
+			svg.select(".cx").attr("transform", "translate(0,"+y(y)+")");
+			svg.select(".cy").attr("transform", "translate("+x(x)+",0)");
+				
+			svg.select(".rect")
+				.attr("width", noNeg(x(x)))
+				.attr("height", noNeg(y(y)));
+			svg.select(".rect")
+				.attr("width", noNeg(width-x(x)))
+				.attr("height", noNeg(y(y)))
+				.attr("transform", "translate(" + (x(x)) + ",0)");
+			svg.select(".rect")
+				.attr("width", noNeg(width-x(x)))
+				.attr("height", noNeg(height-y(y)))
+				.attr("transform", "translate(" + (x(x)) + "," + (y(y)) + ")");
+			svg.select(".rect")
+				.attr("width", noNeg(x(x)))
+				.attr("height", noNeg(height-y(y)))
+				.attr("transform", "translate(0," + (y(y)) + ")");
+			
+			svg.selectAll("polygon")
+				.attr("transform", function(d) {
+					return "translate("+x(d.AANT_INW)+","+y(d.P_WEST_AL)+")";
+				});
+		}
+      
+var alertChange = function() {
+	
+	 var selectedValue = parseInt(d3.event.target.value);
+	 
+	 console.log(selectedValue);
+	
+	 switch(selectedValue)
+	 {
+		 case 1:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_WEST_AL = +d.P_WEST_AL;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_WEST_AL; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of Western People");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_WEST_AL); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of Western People: " + d.P_WEST_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+		}
+		    svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom));  // Call funtion zoom
+
+		break;
+		case 2:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_N_W_AL = +d.P_N_W_AL;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_N_W_AL; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of Non Western People");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_N_W_AL); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of Non Western People: " + d.P_N_W_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+		}
+		break;
+	}
+}
+
+
+ 
+
+d3.select("#item1").on("change", alertChange);
+
+d3.tsv("cities-data.tsv", function(error, data) {
+	
+	   dataset = data;
+});
+
+</script>

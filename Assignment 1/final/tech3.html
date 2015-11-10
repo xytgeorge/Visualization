@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<style>
+path {
+  stroke: grey;
+  stroke-width: 1px;
+  fill: white;
+}
+.arc path {
+  stroke: #fff;
+}
+.axis path,
+.axis line{
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+ 
+.axis text {
+	font-family: sans-serif;
+	font-size: 11px;
+}
+</style>
+<body>
+<a href="index.html"><font size="4" face="times">BACK</font></a>
+
+<div id="title" align="left" style="position:absolute;top:20px;left:20px;width:1000px;height:80px;color:steelblue;font-size:35px;font-family:Impact, Haettenschweiler, 'Franklin Gothic Bold', 'Arial Black', sans-serif">Age & Gender Distribution of Cities in the Netherlands</div>
+
+<div><align="left" style="position:absolute;top:65px;left:650px;width:550px;height:80px;color:steelblue;font-size:25px;font-family:Consolas, 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace">Name of the Selected City:</div>
+
+<div id="citynaam" align="left" style="position:absolute;top:60px;left:1020px;width:550px;height:80px;color:#3399FF;font-size:30px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div><align="left" style="position:absolute;top:95px;left:650px;width:550px;height:80px;color:steelblue;font-size:25px;font-family:Consolas, 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace">Total Area of This City:</div>
+
+<div id="area" align="left" style="position:absolute;top:90px;left:1020px;width:550px;height:80px;color:#3399FF;font-size:30px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div><align="left" style="position:absolute;top:95px;left:1150px;width:350px;height:80px;color:steelblue;font-size:25px;font-family:Consolas, 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace">hectares</div>
+
+<div><align="left" style="position:absolute;top:125px;left:650px;width:550px;height:80px;color:steelblue;font-size:25px;font-family:Consolas, 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace">Number of Inhabitants: </div>
+
+<div id="inhabitants" align="left" style="position:absolute;top:120px;left:1020px;width:550px;height:80px;color:#3399FF;font-size:30px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="manlabel" align="left" style="position:absolute;top:620px;left:870px;width:550px;height:80px;color:steelblue;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="man" align="left" style="position:absolute;top:640px;left:857px;width:550px;height:80px;color:steelblue;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="womanlabel" align="left" style="position:absolute;top:620px;left:1080px;width:550px;height:80px;color:#FF6600;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="woman" align="left" style="position:absolute;top:640px;left:1080px;width:550px;height:80px;color:#FF6600;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="percentage1" align="left" style="position:absolute;top:640px;left:902px;width:550px;height:80px;color:steelblue;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<div id="percentage2" align="left" style="position:absolute;top:640px;left:1125px;width:550px;height:80px;color:#FF6600;font-size:18px;font-family:Gotham, 'Helvetica Neue', Helvetica, Arial, sans-serif"></div>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script>
+
+
+var active = d3.select(null);
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 700 - margin.left - margin.right,
+    height = 850 - margin.top - margin.bottom;
+
+var radius = 150;
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, 550], .1);
+
+var y = d3.scale.linear()
+    .range([380, 70]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(20, "");
+	
+var color = d3.scale.category10();
+
+var arc = d3.svg.arc()
+    .outerRadius(radius - 5)
+    .innerRadius(radius - 70);
+
+var pie = d3.layout.pie()
+    .sort(null)
+    .value(function(d) { return d.data; });    
+
+var cityData = d3.map();
+
+var cityDataAll = d3.map();
+
+var logColorScale = d3.scale.log()
+    .domain([0.0, 100.0])
+    .range(["white", "red"]);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// Setup the map projection for a good depiction of The Netherlands. The
+// projection is centered on the geographical center of the country, which
+// happens to be the city of Lunteren.
+var projection = d3.geo.albers()
+      .rotate([0, 0])
+      .center([5.3, 52.15])
+      .parallels([50, 53])
+      .scale(15000)
+      .translate([width/2, height/2]);
+
+var path = d3.geo.path().projection(projection);
+ 
+var g = svg.append("g");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width - margin.left - margin.right )
+    .attr("height", height - margin.top - margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+function clicked(d) {
+  if (active.node() === this) return reset();
+  active.classed("active", false);
+  active = d3.select(this).classed("active", true);
+
+  var bounds = path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = .35 / Math.max(dx / width, dy / height),
+      translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+  g.transition()
+      .duration(750)
+      .style("stroke-width", 1.5 / scale + "px")
+      .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+}
+
+function reset() {
+  active.classed("active", false);
+  active = d3.select(null);
+
+  g.transition()
+      .duration(750)
+      .style("stroke-width", "1.5px")
+      .attr("transform", "");
+}
+
+// Closure
+(function(){
+
+  /**
+   * Decimal adjustment of a number.
+   *
+   * @param {String}  type  The type of adjustment.
+   * @param {Number}  value The number.
+   * @param {Integer} exp   The exponent (the 10 logarithm of the adjustment base).
+   * @returns {Number}      The adjusted value.
+   */
+  function decimalAdjust(type, value, exp) {
+    // If the exp is undefined or zero...
+    if (typeof exp === 'undefined' || +exp === 0) {
+      return Math[type](value);
+    }
+    value = +value;
+    exp = +exp;
+    // If the value is not a number or the exp is not an integer...
+    if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
+      return NaN;
+    }
+    // Shift
+    value = value.toString().split('e');
+    value = Math[type](+(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp)));
+    // Shift back
+    value = value.toString().split('e');
+    return +(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp));
+  }
+
+  // Decimal round
+  if (!Math.round10) {
+    Math.round10 = function(value, exp) {
+      return decimalAdjust('round', value, exp);
+    };
+  }
+  // Decimal floor
+  if (!Math.floor10) {
+    Math.floor10 = function(value, exp) {
+      return decimalAdjust('floor', value, exp);
+    };
+  }
+  // Decimal ceil
+  if (!Math.ceil10) {
+    Math.ceil10 = function(value, exp) {
+      return decimalAdjust('ceil', value, exp);
+    };
+  }
+
+})();
+
+function mouseOverArc(d) {
+
+  var data = cityDataAll.get(d.gm_code);
+  
+  document.getElementById("citynaam").innerHTML = data.GM_NAAM;
+    
+  document.getElementById("inhabitants").innerHTML = data.AANT_INW;
+
+  document.getElementById("area").innerHTML = data.OPP_TOT; 
+
+  document.getElementById("man").innerHTML = Math.round10(data.AANT_MAN / (parseInt(data.AANT_MAN) + parseInt(data.AANT_VROUW)) * 100, -2);
+
+  document.getElementById("woman").innerHTML = Math.round10(data.AANT_VROUW / (parseInt(data.AANT_MAN) + parseInt(data.AANT_VROUW)) * 100, -2);
+
+  document.getElementById("manlabel").innerHTML = "Man";
+
+  document.getElementById("womanlabel").innerHTML = "Woman";
+
+  document.getElementById("percentage1").innerHTML = "%";
+
+  document.getElementById("percentage2").innerHTML = "%";
+
+  var ages = [];
+  var agegroup = { age:5, percentage:data.P_00_04_JR };
+  ages[0] = agegroup;
+  agegroup = { age:10, percentage:data.P_05_09_JR };
+  ages[1] = agegroup;
+  agegroup = { age:15, percentage:data.P_10_14_JR };
+  ages[2] = agegroup;
+  agegroup = { age:20, percentage:data.P_15_19_JR };
+  ages[3] = agegroup;
+  agegroup = { age:25, percentage:data.P_20_24_JR };
+  ages[4] = agegroup;
+  agegroup = { age:30, percentage:data.P_25_29_JR };
+  ages[5] = agegroup;
+  agegroup = { age:35, percentage:data.P_30_34_JR };
+  ages[6] = agegroup;
+  agegroup = { age:40, percentage:data.P_35_39_JR };
+  ages[7] = agegroup;
+  agegroup = { age:45, percentage:data.P_40_44_JR };
+  ages[8] = agegroup;
+  agegroup = { age:50, percentage:data.P_45_49_JR };
+  ages[9] = agegroup;
+  agegroup = { age:55, percentage:data.P_50_54_JR };
+  ages[10] = agegroup;
+  agegroup = { age:60, percentage:data.P_55_59_JR };
+  ages[11] = agegroup;
+  agegroup = { age:65, percentage:data.P_60_65_JR };
+  ages[12] = agegroup;
+  agegroup = { age:70, percentage:data.P_65_69_JR };
+  ages[13] = agegroup;
+  agegroup = { age:75, percentage:data.P_70_74_JR };
+  ages[14] = agegroup;
+  agegroup = { age:80, percentage:data.P_75_79_JR };
+  ages[15] = agegroup;
+  agegroup = { age:85, percentage:data.P_80_84_JR };
+  ages[16] = agegroup;
+  agegroup = { age:90, percentage:data.P_85_89_JR };
+  ages[17] = agegroup;
+  agegroup = { age:95, percentage:data.P_90_94_JR };
+  ages[18] = agegroup;
+  agegroup = { age:100, percentage:data.P_95_EO_JR };
+  ages[19] = agegroup;
+
+  var manwoman = [];
+  manwoman[0] = { gender:"man", data:data.AANT_MAN };
+  manwoman[1] = { gender:"woman", data:data.AANT_VROUW };
+        
+  svg.selectAll("rect").remove();
+  
+  svg.selectAll("text").remove();
+
+  svg.selectAll(".arc").remove();
+  
+  svg.selectAll("rect")
+      .data(ages)
+      .enter().append("rect")
+      .attr("class", "bar")
+	    .attr("x", 0)
+      .attr("y", 380)
+	    .attr("height", 0)
+	    .attr("fill","red")
+	    .transition()
+	    .duration(1500)
+	    .ease("bounce")
+	    .delay(function(d,i){ return 100 * i; })
+	    .attr("x", function(d) { return x(d.age) - 25; })
+	    .attr("y", function(d) { return y(d.percentage); })
+      .attr("width", x.rangeBand())
+	    .attr("height", function(d) { return 380 - y(d.percentage); })
+	    .attr("fill", "steelblue");
+	  
+  svg.selectAll("text")
+      .data(ages)
+      .enter().append("text")
+      .attr("x", function(d) { return x(d.age) - 30;})
+	    .attr("y", function(d) { return y(d.percentage);})
+      .attr("dx", function(d) { return x.rangeBand() / 3;})
+      .attr("dy", ".75em")
+	    .attr("font-size", 14)
+	    .attr("fill", "white")
+	    .text(function(d) { return d.percentage; }) 
+
+  svg.selectAll(".arc")
+      .data(pie(manwoman))
+      .enter().append("g")
+      .attr("class", "arc")
+      .append("path")
+      .attr("d", arc)
+      .attr("transform", "translate(310, 550)")
+      .style("fill", function(d, i) { return color(i); })
+      .append("text")
+      .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+      .attr("dy", ".35em")
+      .style("text-anchor", "middle")
+      .text(function(d) { return d.data.gender; });
+	  
+   x.domain([0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]);
+   y.domain([0.0, 12.0]);
+
+   svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(-10, 380)")
+        .call(xAxis)
+        .append("text")
+        .attr("y", 30)
+        .attr("x", 500)
+        .text("Age group");
+
+   svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+		    .attr("x", -60)
+        .attr("y", 10)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Percentage");	  
+}
+
+queue()
+   .defer(d3.json, "cities-geometry.json")
+   .defer(d3.tsv, "cities-data.txt", function(d) { if(d.Naam != "") { cityData.set(d.Code, +d.AANT_INW); } })
+   .defer(d3.tsv, "cities-data.txt", function(d) { cityDataAll.set(d.Code, d); })
+   .await(dataLoaded);
+
+function dataLoaded(error, mapData) {
+    var maxValue = d3.max(cityData.values());
+    var minValue = d3.min(cityData.values());
+
+    logColorScale.domain([minValue, maxValue]);
+    
+    g.selectAll("path")
+    .data(mapData.features).enter()
+    .append("path")
+    .attr("d", path)
+    .style("fill", function(d) { return logColorScale(cityData.get(d.gm_code)); })    
+    .on("click", clicked)
+	  .on("mouseover", mouseOverArc)
+	  .on("mouseenter", function(d,i) {
+           d3.select(this).transition().duration(300)
+           .style({'stroke-opacity':1,'stroke':"darkred", 'stroke-width': "5px"});
+           })
+    .on("mouseout", function(d,i) { 
+          d3.select(this).transition().duration(300)
+          .style({'stroke-width':"1px",'stroke':"grey"});
+           })
+	
+    .append("title").text(function(d) {
+      return "City Name: " + d.gm_naam + ", " + "Number of Inhabitants: " + cityData.get(d.gm_code); 
+    });
+    
+    x.domain([0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]);
+    y.domain([0.0, 12.0]);
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(-10, 380)")
+        .call(xAxis)
+        .append("text")
+        .attr("y", 30)
+        .attr("x", 500)
+        .text("Age group");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+		    .attr("x", -60)
+        .attr("y", 10)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Percentage");
+}
+</script>
+</body>
+</html>

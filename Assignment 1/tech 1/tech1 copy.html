@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  stroke: black;
+}
+
+</style>
+<body>
+<a href="index.html"><font size="4" face="times">BACK</font></a>
+
+<div style="">Select foreigners:<br/>
+<select id="item1" name="Item 1">
+  <option value= 1 > Percentage of foreigners from Europe, North-America, Oceania, Indonesia, and Japan </option>
+  <option value= 2 > Percentage of foreigners not from Europe, North-America, Oceania, Indonesia, and Japan </option>
+  <option value= 3 > Percentage of foreigners from Morocco, Ifni, Spanish Sahara, and Western Sahara </option>
+  <option value= 4 > Percentage of foreigners from the Dutch Antilles and Aruba </option>
+  <option value= 5 > Percentage of foreigners from Surinam </option>
+  <option value= 6 > Percentage of foreigners from Turkey </option>
+  <option value= 7 > Percentage of foreigners from other countries than mentioned in the above 4 attributes </option>
+</select>
+</div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svgy = d3.select("body").append("svg")
+    .attr("width", 75)
+    .attr("height", 485)
+    .append("g")
+    .attr("transform", "translate(50, 30)");	
+	
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var svgx = d3.select("body").append("svg")
+    .attr("width", 1200)
+    .attr("height", 100)
+    .append("g")
+    .attr("transform", "translate(50, 1)");	
+
+var x = d3.scale.pow().exponent(.4)
+    	.range([0, width + 60]);
+
+var y = d3.scale.linear()
+    	.range([height, 0]);
+		
+var tooltip = d3.select("body").append("div")
+     .attr("class", "tooltip")
+     .style("opacity", 0);
+			
+var xAxis = d3.svg.axis()
+    	.scale(x)
+   		.orient("bottom");
+
+var yAxis = d3.svg.axis()
+		.scale(y)
+    	.orient("left");
+
+var xline = svgx.append("g")
+      			.attr("class", "x axis")
+      			.attr("transform", "translate(20, 0)");
+				
+var xlabel = svgx.append("text")
+      			.attr("class", "label")
+      			.attr("x", 600)
+      			.attr("y", 40)
+				.attr("font-size", "16px")
+      			.style("text-anchor", "end");
+
+var yline = svgy.append("g")
+      			.attr("class", "y axis")
+				.attr("transform", "translate(20, 0)");
+				
+var ylabel = svgy.append("text")
+      			.attr("class", "label")
+      			.attr("transform", "rotate(-90)")
+      			.attr("x", -220)
+				.attr("y", -50)
+      			.attr("dy", "1em")
+				.attr("font-size", "16px")
+      			.style("text-anchor", "middle");				
+
+var ylabel2 = svgy.append("text")
+      			.attr("class", "label")
+      			.attr("transform", "rotate(-90)")
+      			.attr("x", -220)
+				.attr("y", -30)
+      			.attr("dy", "1em")
+				.attr("font-size", "16px")
+      			.style("text-anchor", "middle");
+				
+var color = d3.scale.category10();
+
+var dataset;
+
+var circle = svg.selectAll(".dot");
+
+// what to do when we mouse over a bubble
+var mouseOn = function() { 
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+	// transition to increase size/opacity of bubble
+		circle.transition()
+		.duration(800).style("opacity", 1)
+		.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 7; }).ease("elastic");
+
+		// append lines to bubbles that will be used to show the precise data points.
+		// translate their location based on margins
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", circle.attr("cx") - 40)
+			.attr("x2", circle.attr("cx") - 40)
+			.attr("y1", +circle.attr("cy") - 20)
+			.attr("y2", height - margin.bottom / 2 + 60)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); })
+
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", +circle.attr("cx") - 40)
+			.attr("x2", -100 )
+			.attr("y1", circle.attr("cy") - 20)
+			.attr("y2", circle.attr("cy") - 20)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); });
+		});
+	// function to move mouseover item to front of SVG stage, in case
+	// another bubble overlaps it
+		d3.selection.prototype.moveToFront = function() { 
+		  return this.each(function() { 
+			this.parentNode.appendChild(this); 
+		  }); 
+		};
+	};
+	
+	// what happens when we leave a bubble?
+var mouseOff = function() {
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+			circle.transition()
+			.duration(800).style("opacity", 0.5)
+			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; }).ease("elastic");
+
+		// fade out guide lines, then remove them
+			d3.selectAll(".guide").transition().duration(100).styleTween("opacity", 
+						function() { return d3.interpolate(.5, 0); })
+						.remove()
+		})
+		// go back to original size and opacity
+};
+
+      
+var alertChange = function() {
+	
+	 var selectedValue = parseInt(d3.event.target.value);
+	 
+	 console.log(selectedValue);
+	
+	 switch(selectedValue)
+	 {
+		 case 1:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_WEST_AL = +d.P_WEST_AL;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_WEST_AL; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of foreigners from Europe, North-America, Oceania,");
+			ylabel2.text("Indonesia, and Japan");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_WEST_AL); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+      			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from Europe, North-America, Oceania, Indonesia, and Japan: " + d.P_WEST_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom1));  // Call funtion zoom
+		}
+		break;
+		case 2:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_N_W_AL = +d.P_N_W_AL;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_N_W_AL; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of foreigners not from Europe, North-America,");
+			ylabel2.text(" Oceania, Indonesia, and Japan");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_N_W_AL); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners not from Europe, North-America, Oceania, Indonesia, and Japan: " + d.P_N_W_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom2));  // Call funtion zoom
+		}
+		break;
+		case 3:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_MAROKKO = +d.P_MAROKKO;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_MAROKKO; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of foreigners from Morocco, Ifni, ");
+			ylabel2.text(" Spanish Sahara, and Western Sahara");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_MAROKKO); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from Morocco, Ifni, Spanish Sahara, and Western Sahara: " + d.P_MAROKKO + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom3));  // Call funtion zoom
+		}
+		break;
+		case 4:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_ANT_ARU = +d.P_ANT_ARU;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_ANT_ARU; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+			ylabel.text(" ");
+			ylabel2.text("Percentage of foreigners from the Dutch Antilles and Aruba");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_ANT_ARU); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from the Dutch Antilles and Aruba: " + d.P_ANT_ARU + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom4));  // Call funtion zoom
+		}
+		break;
+		case 5:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_SURINAM = +d.P_SURINAM;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_SURINAM; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+			ylabel.text(" ");
+			ylabel2.text("Percentage of foreigners from Surinam");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_SURINAM); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from Surinam: " + d.P_SURINAM + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom5));  // Call funtion zoom
+		}
+		break;
+		case 6:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_TURKIJE = +d.P_TURKIJE;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_TURKIJE; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+			ylabel.text(" ");
+			ylabel2.text("Percentage of foreigners from Turkey");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_TURKIJE); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from Turkey: " + d.P_TURKIJE + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom6));  // Call funtion zoom
+		}
+		break;
+		case 7:
+		{
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_OVER_NW = +d.P_OVER_NW;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_OVER_NW; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+			ylabel.text("Percentage of foreigners from other countries than ");
+			ylabel2.text("mentioned in the above 4 attributes");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_OVER_NW); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from other countries than mentioned in the above 4 attributes: " + d.P_OVER_NW + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+			svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom7));  // Call funtion zoom
+		}
+		break;
+	}
+}
+
+d3.select("#item1").on("change", alertChange);
+
+d3.tsv("cities-data.tsv", function(error, data) {
+	
+	   dataset = data;
+	   
+			d3.selectAll(".dot").remove();
+			dataset.forEach(function(d) {
+    			 d.AANT_INW = +d.AANT_INW;
+   				 d.P_WEST_AL = +d.P_WEST_AL;
+  			});
+			x.domain(d3.extent(dataset, function(d) { return d.AANT_INW; })).nice();
+  			y.domain(d3.extent(dataset, function(d) { return d.P_WEST_AL; })).nice();
+      		xline.call(xAxis);
+  			yline.call(yAxis);
+			xlabel.text("Number of Inhabitants");	
+      		ylabel.text("Percentage of foreigners from Europe, North-America, Oceania,");
+			ylabel2.text(" Indonesia, and Japan");
+  			circle.data(dataset)
+      			.enter().append("circle")
+      			.attr("class", "dot")
+      			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      			.attr("cx", function(d) { return x(d.AANT_INW); })
+      			.attr("cy", function(d) { return y(d.P_WEST_AL); })
+      			.style("fill", function(d) { return color(d.STED); })
+	 			.on("mouseover", mouseOn)
+	  			.on("mouseout", mouseOff)
+	 			.append("title")
+	 			.text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of foreigners from Europe, North-America, Oceania, Indonesia, and Japan: " + d.P_WEST_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+		svg.call(d3.behavior.zoom().x(x).y(y).on("zoom", zoom1));  // Call funtion zoom
+});
+
+var legend = svg.selectAll("rect")
+      .data([3,4,5,1,2])
+      .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(780," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", 110)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  legend.append("text")
+      .attr("x", 100)
+      .attr("y", 5)
+      .attr("dy", ".40em")
+	  .attr("font-size", 15)
+      .style("text-anchor", "end")
+      .text(function(d, i) { switch(i) 
+	  		{case 0: 
+				return "Moderately Urban";
+				break;
+		     case 1:
+			 	return "Slightly Urban";
+				break;
+			 case 2:
+			 	return "Not Urban";
+				break;
+			 case 3:
+			 	return "Very Strongly Urban";
+				break;
+			 case 4:
+			 	return "Strongly Urban";
+				break;
+			}
+		});
+		
+		svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2) + 15)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "26px")  
+        .text("Different foreigners in the cities of Netherlands");
+		
+    // Zoom into data (.dot)
+				function zoom1() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_WEST_AL); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom2() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_N_W_AL); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom3() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_MAROKKO); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom4() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_ANT_ARU); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom5() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_SURINAM); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom6() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_TURKIJE); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+				function zoom7() {
+					svg.selectAll(".dot")
+						.attr("cx", function(d) { return x(d.AANT_INW); })
+						.attr("cy", function(d) { return y(d.P_OVER_NW); });
+					d3.select('.x.axis').call(xAxis);
+					d3.select('.y.axis').call(yAxis);
+				}
+
+</script>

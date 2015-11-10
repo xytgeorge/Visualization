@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+  stroke: #000;
+}
+
+</style>
+<body>
+<a href="index.html"><font size="4" face="times">BACK</font></a>
+<select id="item1" name="Item 1" onchange="getCombo(this)">
+  <option> Select Y Axis </option>
+  <option> P_WEST_AL </option>
+  <option> P_N_W_AL </option>
+  <option> P_MAROKKO </option>
+  <option> P_ANT_ARU </option>
+  <option> P_SURINAM </option>
+  <option> P_TURKIJE </option>
+  <option> P_OVER_NW </option>
+</select>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var color = d3.scale.category10();
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// what to do when we mouse over a bubble
+	var mouseOn = function() { 
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+	// transition to increase size/opacity of bubble
+		circle.transition()
+		.duration(800).style("opacity", 1)
+		.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 7; }).ease("elastic");
+
+		// append lines to bubbles that will be used to show the precise data points.
+		// translate their location based on margins
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", circle.attr("cx") - 40)
+			.attr("x2", circle.attr("cx") - 40)
+			.attr("y1", +circle.attr("cy") - 20)
+			.attr("y2", height - margin.bottom / 2)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); })
+
+		svg.append("g")
+			.attr("class", "guide")
+		    .append("line")
+			.attr("x1", +circle.attr("cx") - 40)
+			.attr("x2", -40 )
+			.attr("y1", circle.attr("cy") - 20)
+			.attr("y2", circle.attr("cy") - 20)
+			.attr("transform", "translate(40, 20)")
+			.style("stroke", circle.style("fill"))
+			.transition().delay(200).duration(400).styleTween("opacity", 
+						function() { return d3.interpolate(0, .5); });
+		});
+	// function to move mouseover item to front of SVG stage, in case
+	// another bubble overlaps it
+		d3.selection.prototype.moveToFront = function() { 
+		  return this.each(function() { 
+			this.parentNode.appendChild(this); 
+		  }); 
+		};
+	};
+	
+	// what happens when we leave a bubble?
+	var mouseOff = function() {
+		var circle = d3.select(this);
+		var data = d3.tsv("cities-data.tsv", function(error, data) {
+			circle.transition()
+			.duration(800).style("opacity", 0.5)
+			.attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; }).ease("elastic");
+
+		// fade out guide lines, then remove them
+			d3.selectAll(".guide").transition().duration(100).styleTween("opacity", 
+						function() { return d3.interpolate(.5, 0); })
+						.remove()
+		})
+		// go back to original size and opacity
+		
+	};
+	
+
+  d3.tsv("cities-data.tsv", function(error, data) {
+  data.forEach(function(d) {
+    d.AANT_INW = +d.AANT_INW;
+    d.P_WEST_AL = +d.P_WEST_AL;
+  });
+  
+
+  x.domain(d3.extent(data, function(d) { return d.AANT_INW; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.P_WEST_AL; })).nice();
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Number of Inhabitants");
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Percentage of Western People");
+
+  svg.selectAll(".dot")
+      .data(data)
+      .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", function(d) { return Math.sqrt(d.OPP_TOT) / 15; })
+      .attr("cx", function(d) { return x(d.AANT_INW); })
+      .attr("cy", function(d) { return y(d.P_WEST_AL); })
+      .style("fill", function(d) { return color(d.STED); })
+	  .on("mouseover", mouseOn)
+	  .on("mouseout", mouseOff)
+	  .append("title")
+	  .text(function(d) { return d.GM_NAAM + ", " + "Number of Inhabitants: " + d.AANT_INW + ", " + "Percentage of Western People: " + d.P_WEST_AL + "% , " + "Area: " + d.OPP_TOT + " km^2."; });
+  
+  var legend = svg.selectAll(".legend")
+      .data(color.domain())
+      .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  legend.append("text")
+      .attr("x", width - 25)
+      .attr("y", 10)
+      .attr("dy", ".40em")
+	  .attr("font-size", 15)
+      .style("text-anchor", "end")
+      .text(function(d) { switch(d) 
+	  		{case "1": 
+				return "Very Strongly Urban";
+				break;
+		     case "2":
+			 	return "Strongly Urban";
+				break;
+			 case "3":
+			 	return "Moderately Urban";
+				break;
+			 case "4":
+			 	return "Slightly Urban";
+				break;
+			 case "5":
+			 	return "Not Urban";
+				break;
+			}
+		});
+});
+
+</script>
